@@ -143,6 +143,45 @@ class Weibo:
             print("Error: ", e)
             traceback.print_exc()
 
+        def get_imgs(self, info):
+        try:
+            while True:
+                picGroupArray = info.xpath(".//a[contains(text(),'组图')]/@href")
+                imgArray = []
+                if picGroupArray:
+                    # 获取多张图片的链接
+                    picGroupLink = picGroupArray[0]
+                    html = requests.get(picGroupLink, cookies=self.cookie).content
+                    selector = etree.HTML(html)
+                    imgArray = selector.xpath("//img/@src")
+                else:
+                    imgArray = info.xpath(".//img[@class='ib']/@src")
+                self.weibo_imgs.append(imgArray)
+                return
+        except Exception as e:
+            print("Error: ", e)
+            traceback.print_exc()
+    
+    def save_img(self):
+        try:
+            for i in range(len(self.weibo_imgs)):
+                for j in range(len(self.weibo_imgs[i])):
+                    resource = self.weibo_imgs[i][j]
+                    img = requests.get(resource)
+                    file_dir = os.path.split(os.path.realpath(__file__))[
+                    0] + os.sep + "PIC"
+                    if not os.path.isdir(file_dir):
+                        os.mkdir(file_dir)
+                    file_name = file_dir + os.sep + "%d" % self.user_id+"_" + str(i) + "_" +str(j) +".jpg"
+                    with open(file_name, 'ab') as f:
+                        f.write(img.content)
+                        print(file_name)
+                        f.close()
+        except Exception as e:
+            print("Error: ",e)
+            traceback.print_exc()
+
+
     # 获取微博发布位置
     def get_weibo_place(self, info):
         try:
@@ -250,6 +289,9 @@ class Weibo:
                         # 微博发布时间
                         self.get_publish_time(info[i])
 
+                        #微博图片获取 
+                        self.get_imgs(info[i])  
+
                         # 微博发布工具
                         self.get_publish_tool(info[i])
 
@@ -333,6 +375,7 @@ class Weibo:
             self.get_user_info()
             self.get_weibo_info()
             self.write_txt()
+            self.save_img()
             print(u"信息抓取完毕")
             print(
                 "===========================================================================")
